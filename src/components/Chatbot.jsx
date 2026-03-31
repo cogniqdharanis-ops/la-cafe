@@ -17,9 +17,9 @@ function BotText({ text }) {
         <span key={li}>
           {li > 0 && <br />}
           {line.split(/\*\*(.*?)\*\*/g).map((part, pi) =>
-            pi % 2 === 1 ? (
-              <strong key={pi} style={{ color: "#D4A843", fontWeight: 600 }}>{part}</strong>
-            ) : part
+            pi % 2 === 1
+              ? <strong key={pi} style={{ color: "#A7552F", fontWeight: 700 }}>{part}</strong>
+              : part
           )}
         </span>
       ))}
@@ -31,12 +31,15 @@ function TypingDots() {
   return (
     <div style={{ display: "flex", gap: 5, padding: "10px 14px", alignItems: "center" }}>
       {[0, 1, 2].map((i) => (
-        <span key={i} style={{
-          width: 7, height: 7, borderRadius: "50%",
-          background: "rgba(255,246,236,0.35)", display: "inline-block",
-          animation: "chatDot 1.2s ease-in-out infinite",
-          animationDelay: `${i * 0.2}s`,
-        }} />
+        <span
+          key={i}
+          style={{
+            width: 7, height: 7, borderRadius: "50%",
+            background: "rgba(0,0,0,0.25)", display: "inline-block",
+            animation: "chatDot 1.2s ease-in-out infinite",
+            animationDelay: `${i * 0.2}s`,
+          }}
+        />
       ))}
     </div>
   );
@@ -45,7 +48,11 @@ function TypingDots() {
 export default function Chatbot() {
   const [open,     setOpen]     = useState(false);
   const [messages, setMessages] = useState([
-    { id: 0, role: "assistant", content: "Hey! 👋 Welcome to The L.A. Cafe. Ask me about our menu, hours, vegan options, wait times, or parking!" },
+    {
+      id: 0,
+      role: "assistant",
+      content: "Hey! 👋 Welcome to The L.A. Cafe. Ask me about our menu, hours, vegan options, wait times, or parking!",
+    },
   ]);
   const [input,   setInput]   = useState("");
   const [loading, setLoading] = useState(false);
@@ -80,25 +87,20 @@ export default function Chatbot() {
     setInput("");
     setError("");
 
-    const userMsg = { id: Date.now(), role: "user", content: msg };
-    const nextMessages = [...messages, userMsg];
-    setMessages(nextMessages);
+    const userMsg    = { id: Date.now(), role: "user", content: msg };
+    const nextMsgs   = [...messages, userMsg];
+    setMessages(nextMsgs);
     setLoading(true);
 
-    // Build history — skip the initial greeting (id: 0)
-    const history = nextMessages
+    const history = nextMsgs
       .filter((m) => m.id !== 0)
       .map((m) => ({ role: m.role, content: m.content }));
 
     try {
-      // UPDATED: Points to Port 5001 and uses correct variable names
-      const res = await fetch("http://127.0.0.1:5001/api/chat", { 
+      const res = await fetch("http://127.0.0.1:5001/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          message: msg, 
-          history: history 
-        }),
+        body: JSON.stringify({ message: msg, history }),
       });
 
       if (!res.ok) {
@@ -107,9 +109,12 @@ export default function Chatbot() {
       }
 
       const data  = await res.json();
-      const reply = data?.reply || "Sorry, no response received. Please try again!";
+      const reply = data?.reply || "Sorry, no response. Please try again!";
 
-      setMessages((prev) => [...prev, { id: Date.now() + 1, role: "assistant", content: reply }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: Date.now() + 1, role: "assistant", content: reply },
+      ]);
       if (!open) setUnread((n) => n + 1);
 
     } catch (err) {
@@ -128,171 +133,228 @@ export default function Chatbot() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
   };
 
+  // ── Safe-area-aware bottom offset ─────────────────────────
+  // Chatbot sits above the mobile browser chrome + safe area
+  const fabBottom   = "calc(1.5rem + env(safe-area-inset-bottom))";
+  const windowBottom = "calc(5.5rem + env(safe-area-inset-bottom))";
+
   return (
     <>
       <style>{`
         @keyframes chatSlideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to   { opacity: 1; transform: translateY(0); }
+          from { opacity: 0; transform: translateY(14px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0)    scale(1); }
         }
         @keyframes chatDot {
-          0%,100% { opacity: 0.3; transform: scale(0.8); }
+          0%,100% { opacity: 0.3; transform: scale(0.75); }
           50%     { opacity: 1;   transform: scale(1.2); }
         }
         @keyframes chatSpin { to { transform: rotate(360deg); } }
-        .chat-trigger:hover { transform: scale(1.1) !important; }
-        .chat-trigger:active { transform: scale(0.95) !important; }
-        .chat-chip:hover { color: rgba(255,246,236,0.9) !important; border-color: rgba(212,168,67,0.4) !important; }
-        .chat-send:hover:not(:disabled) { background: #a50d25 !important; }
-        .chat-send:active:not(:disabled) { transform: scale(0.95); }
-        .chat-messages::-webkit-scrollbar { display: none; }
+        .chat-fab:hover  { transform: scale(1.1) !important; }
+        .chat-fab:active { transform: scale(0.95) !important; }
+        .chat-chip:hover {
+          color: #111 !important;
+          border-color: rgba(167,85,47,0.5) !important;
+          background: rgba(255,255,255,0.85) !important;
+        }
+        .chat-send:hover:not(:disabled) { opacity: 0.85; }
+        .chat-msgs { scrollbar-width: none; }
+        .chat-msgs::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* ── Trigger button ─────────────────────────────────── */}
+      {/* ── Floating button ─────────────────────────────── */}
       <button
-        className="chat-trigger"
+        className="chat-fab"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close chat" : "Open AI assistant"}
+        aria-expanded={open}
         style={{
-          position: "fixed", bottom: 24, right: 20, zIndex: 1000,
-          width: 56, height: 56, borderRadius: "50%",
-          background: "#C8102E", border: "none", cursor: "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 8px 28px rgba(200,16,46,0.45)",
-          transition: "transform 0.2s, background 0.2s",
+          position: "fixed",
+          bottom: fabBottom,
+          right: "max(1.25rem, env(safe-area-inset-right))",
+          zIndex: 1000,
+          width: 52,
+          height: 52,
+          borderRadius: "50%",
+          // Match the site's brand — black button, amber shadow
+          background: "#111111",
+          border: "2px solid #A7552F",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          boxShadow: "0 6px 24px rgba(0,0,0,0.2), 0 2px 8px rgba(167,85,47,0.3)",
+          transition: "transform 0.2s",
         }}
       >
-        {open ? <X size={22} color="#fff" /> : <MessageCircle size={22} color="#fff" />}
+        {open
+          ? <X size={20} color="#ECE7DE" />
+          : <MessageCircle size={20} color="#ECE7DE" />
+        }
         {!open && unread > 0 && (
           <span style={{
-            position: "absolute", top: -4, right: -4,
+            position: "absolute", top: -5, right: -5,
             minWidth: 20, height: 20, borderRadius: 10,
-            background: "#D4A843", color: "#1A0800",
+            background: "#A7552F", color: "#fff",
             fontSize: 10, fontWeight: 700,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "0 4px",
+            display: "flex", alignItems: "center",
+            justifyContent: "center", padding: "0 4px",
           }}>
             {unread > 9 ? "9+" : unread}
           </span>
         )}
       </button>
 
-      {/* ── Chat window ────────────────────────────────────── */}
+      {/* ── Chat window ─────────────────────────────────── */}
       {open && (
         <div
           role="dialog"
           aria-label="LA Cafe AI Assistant"
           aria-modal="true"
           style={{
-            position: "fixed", bottom: 90, right: 20, zIndex: 1000,
-            width: "min(380px, calc(100vw - 24px))",
-            maxHeight: "min(560px, calc(100dvh - 110px))",
-            borderRadius: 20, overflow: "hidden",
-            display: "flex", flexDirection: "column",
-            background: "#160800",
-            border: "1px solid rgba(212,168,67,0.18)",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.65)",
-            animation: "chatSlideUp 0.3s ease-out",
+            position: "fixed",
+            // Never overlap the FAB, respects safe area
+            bottom: windowBottom,
+            right: "max(1rem, env(safe-area-inset-right))",
+            zIndex: 999,
+            // Width: fills almost full screen on mobile, capped at 380px
+            width: "min(380px, calc(100vw - 2rem))",
+            // Height: fills viewport minus FAB + bottom bar
+            maxHeight: "min(560px, calc(100dvh - 9rem - env(safe-area-inset-bottom)))",
+            borderRadius: 16,
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+            // Match brand: cream/paper bg, black border
+            background: "#F5F0E8",
+            border: "1px solid rgba(0,0,0,0.16)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)",
+            animation: "chatSlideUp 0.28s ease-out",
           }}
         >
-          {/* Header */}
+          {/* ── Header ────────────────────────────────── */}
           <div style={{
-            display: "flex", alignItems: "center", gap: 12,
-            padding: "12px 16px", background: "#C8102E", flexShrink: 0,
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "12px 14px",
+            background: "#111111",
+            borderBottom: "1px solid rgba(167,85,47,0.3)",
+            flexShrink: 0,
           }}>
             <div style={{
-              width: 36, height: 36, borderRadius: "50%",
-              background: "rgba(255,255,255,0.2)",
+              width: 34, height: 34, borderRadius: "50%",
+              background: "rgba(167,85,47,0.25)",
+              border: "1px solid rgba(167,85,47,0.4)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <Sparkles size={16} color="#fff" />
+              <Sparkles size={15} color="#A7552F" />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontWeight: 600, color: "#fff", fontSize: 14 }}>
-                  LA Cafe Assistant
-                </span>
-                <Bot size={12} color="rgba(255,255,255,0.6)" />
+              <div style={{
+                display: "flex", alignItems: "center", gap: 5,
+                color: "#ECE7DE", fontWeight: 700, fontSize: 13,
+                fontFamily: "'Roboto', sans-serif",
+              }}>
+                LA Cafe Assistant
+                <Bot size={11} color="rgba(236,231,222,0.45)" />
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 2 }}>
                 <span style={{
                   width: 6, height: 6, borderRadius: "50%",
-                  background: "#34d399", display: "inline-block",
+                  background: loading ? "#F5A623" : "#4ade80",
+                  display: "inline-block",
+                  animation: "chatDot 2s ease-in-out infinite",
                 }} />
-                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11 }}>
+                <span style={{
+                  color: "rgba(236,231,222,0.5)",
+                  fontSize: 10,
+                  fontFamily: "'Roboto', sans-serif",
+                }}>
                   {loading ? "Typing…" : "Powered by Groq · Llama 3"}
                 </span>
               </div>
             </div>
             <button
               onClick={() => setOpen(false)}
-              aria-label="Close"
+              aria-label="Close chat"
               style={{
                 background: "none", border: "none", cursor: "pointer",
-                color: "rgba(255,255,255,0.65)", padding: 4, borderRadius: 8,
+                color: "rgba(236,231,222,0.55)", padding: 6, borderRadius: 6,
                 display: "flex", alignItems: "center",
               }}
             >
-              <ChevronDown size={18} />
+              <ChevronDown size={17} />
             </button>
           </div>
 
-          {/* Messages */}
+          {/* ── Messages ──────────────────────────────── */}
           <div
-            className="chat-messages"
+            className="chat-msgs"
             style={{
-              flex: 1, overflowY: "auto",
-              padding: 16, display: "flex",
-              flexDirection: "column", gap: 10,
+              flex: 1, overflowY: "auto", padding: "14px 12px",
+              display: "flex", flexDirection: "column", gap: 10,
               minHeight: 0,
             }}
           >
-            {messages.map((m) => (
+            {messages.map((m) =>
               m.role === "user" ? (
                 <div key={m.id} style={{ display: "flex", justifyContent: "flex-end" }}>
                   <div style={{
-                    maxWidth: "84%", background: "#C8102E", color: "#fff",
-                    borderRadius: "18px 18px 4px 18px",
-                    padding: "10px 14px", fontSize: 13.5, lineHeight: 1.55,
+                    maxWidth: "82%",
+                    background: "#111111",
+                    color: "#ECE7DE",
+                    borderRadius: "16px 16px 3px 16px",
+                    padding: "9px 13px",
+                    fontSize: 13,
+                    lineHeight: 1.55,
+                    fontFamily: "'Roboto', sans-serif",
                   }}>
                     {m.content}
                   </div>
                 </div>
               ) : (
-                <div key={m.id} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                <div key={m.id} style={{ display: "flex", gap: 7, alignItems: "flex-start" }}>
                   <div style={{
-                    width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
-                    background: "rgba(200,16,46,0.2)", border: "1px solid rgba(200,16,46,0.3)",
-                    display: "flex", alignItems: "center", justifyContent: "center", marginTop: 2,
+                    width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                    background: "rgba(167,85,47,0.15)",
+                    border: "1px solid rgba(167,85,47,0.3)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    marginTop: 2,
                   }}>
-                    <Bot size={12} color="#C8102E" />
+                    <Bot size={11} color="#A7552F" />
                   </div>
                   <div style={{
-                    maxWidth: "84%", background: "rgba(45,16,0,0.7)",
-                    border: "1px solid rgba(212,168,67,0.12)",
-                    color: "rgba(255,246,236,0.9)",
-                    borderRadius: "18px 18px 18px 4px",
-                    padding: "10px 14px", fontSize: 13.5, lineHeight: 1.55,
+                    maxWidth: "82%",
+                    background: "rgba(255,255,255,0.72)",
+                    border: "1px solid rgba(0,0,0,0.10)",
+                    color: "#111111",
+                    borderRadius: "16px 16px 16px 3px",
+                    padding: "9px 13px",
+                    fontSize: 13,
+                    lineHeight: 1.6,
+                    fontFamily: "'Roboto', sans-serif",
                   }}>
                     <BotText text={m.content} />
                   </div>
                 </div>
               )
-            ))}
+            )}
 
-            {/* Typing */}
+            {/* Typing dots */}
             {loading && (
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+              <div style={{ display: "flex", gap: 7, alignItems: "flex-start" }}>
                 <div style={{
-                  width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
-                  background: "rgba(200,16,46,0.2)", border: "1px solid rgba(200,16,46,0.3)",
-                  display: "flex", alignItems: "center", justifyContent: "center", marginTop: 2,
+                  width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                  background: "rgba(167,85,47,0.15)",
+                  border: "1px solid rgba(167,85,47,0.3)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  marginTop: 2,
                 }}>
-                  <Bot size={12} color="#C8102E" />
+                  <Bot size={11} color="#A7552F" />
                 </div>
                 <div style={{
-                  background: "rgba(45,16,0,0.7)", border: "1px solid rgba(212,168,67,0.12)",
-                  borderRadius: "18px 18px 18px 4px",
+                  background: "rgba(255,255,255,0.72)",
+                  border: "1px solid rgba(0,0,0,0.10)",
+                  borderRadius: "16px 16px 16px 3px",
                 }}>
                   <TypingDots />
                 </div>
@@ -302,22 +364,25 @@ export default function Chatbot() {
             {/* Error */}
             {error && (
               <div style={{
-                fontSize: 12, color: "#f87171",
-                background: "rgba(239,68,68,0.1)",
-                border: "1px solid rgba(239,68,68,0.25)",
-                borderRadius: 10, padding: "8px 12px",
+                fontSize: 12, color: "#b91c1c",
+                background: "rgba(220,38,38,0.08)",
+                border: "1px solid rgba(220,38,38,0.2)",
+                borderRadius: 8, padding: "8px 12px",
+                fontFamily: "'Roboto', sans-serif",
               }}>
                 {error}
               </div>
             )}
-
             <div ref={bottomRef} />
           </div>
 
-          {/* Quick chips */}
+          {/* ── Quick chips ───────────────────────────── */}
           <div style={{
-            display: "flex", gap: 6, padding: "0 12px 8px",
-            overflowX: "auto", flexShrink: 0, scrollbarWidth: "none",
+            display: "flex", gap: 6,
+            padding: "0 12px 8px",
+            overflowX: "auto",
+            flexShrink: 0,
+            scrollbarWidth: "none",
           }}>
             {CHIPS.map((chip) => (
               <button
@@ -327,13 +392,19 @@ export default function Chatbot() {
                 disabled={loading}
                 style={{
                   flexShrink: 0, fontSize: 11, fontWeight: 600,
-                  padding: "6px 12px", borderRadius: 30,
+                  padding: "7px 12px",
+                  // min 36px height for touch
+                  minHeight: 36,
+                  borderRadius: 30,
                   cursor: loading ? "not-allowed" : "pointer",
-                  background: "rgba(45,16,0,0.7)",
-                  border: "1px solid rgba(212,168,67,0.18)",
-                  color: "rgba(255,246,236,0.6)", whiteSpace: "nowrap",
+                  background: "rgba(255,255,255,0.65)",
+                  border: "1px solid rgba(0,0,0,0.14)",
+                  color: "rgba(17,17,17,0.6)",
+                  whiteSpace: "nowrap",
                   opacity: loading ? 0.45 : 1,
                   transition: "all 0.15s",
+                  fontFamily: "'Roboto', sans-serif",
+                  letterSpacing: "0.02em",
                 }}
               >
                 {chip}
@@ -341,8 +412,14 @@ export default function Chatbot() {
             ))}
           </div>
 
-          {/* Input */}
-          <div style={{ display: "flex", gap: 8, padding: "0 12px 12px", flexShrink: 0 }}>
+          {/* ── Input row ─────────────────────────────── */}
+          <div style={{
+            display: "flex", gap: 8,
+            padding: "0 12px 12px",
+            flexShrink: 0,
+            borderTop: "1px solid rgba(0,0,0,0.08)",
+            paddingTop: 10,
+          }}>
             <input
               ref={inputRef}
               value={input}
@@ -353,11 +430,17 @@ export default function Chatbot() {
               maxLength={300}
               aria-label="Chat message"
               style={{
-                flex: 1, background: "rgba(45,16,0,0.6)",
-                border: "1px solid rgba(212,168,67,0.18)",
-                borderRadius: 14, padding: "10px 14px",
-                color: "rgba(255,246,236,0.9)", fontSize: 13,
-                outline: "none", minHeight: 42,
+                flex: 1,
+                background: "rgba(255,255,255,0.7)",
+                border: "1px solid rgba(0,0,0,0.14)",
+                borderRadius: 10,
+                padding: "9px 13px",
+                color: "#111111",
+                fontSize: 13,
+                fontFamily: "'Roboto', sans-serif",
+                outline: "none",
+                // 44px min tap target
+                minHeight: 44,
                 opacity: loading ? 0.6 : 1,
               }}
             />
@@ -365,34 +448,45 @@ export default function Chatbot() {
               className="chat-send"
               onClick={() => send()}
               disabled={!input.trim() || loading}
-              aria-label="Send"
+              aria-label="Send message"
               style={{
-                width: 42, height: 42, borderRadius: 12,
-                background: "#C8102E", border: "none",
+                width: 44, height: 44, borderRadius: 10,
+                background: "#111111",
+                border: "none",
                 cursor: !input.trim() || loading ? "not-allowed" : "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0, opacity: !input.trim() || loading ? 0.4 : 1,
-                transition: "background 0.15s",
+                flexShrink: 0,
+                opacity: !input.trim() || loading ? 0.35 : 1,
+                transition: "opacity 0.15s",
               }}
             >
               {loading
                 ? <div style={{
                     width: 14, height: 14,
-                    border: "2px solid #fff", borderTopColor: "transparent",
-                    borderRadius: "50%", animation: "chatSpin 0.7s linear infinite",
+                    border: "2px solid #ECE7DE",
+                    borderTopColor: "transparent",
+                    borderRadius: "50%",
+                    animation: "chatSpin 0.7s linear infinite",
                   }} />
-                : <Send size={15} color="#fff" />
+                : <Send size={15} color="#ECE7DE" />
               }
             </button>
           </div>
 
-          {/* Footer */}
+          {/* ── Footer note ───────────────────────────── */}
           <div style={{
-            textAlign: "center", padding: "0 16px 10px",
-            fontSize: 10, color: "rgba(255,246,236,0.2)", flexShrink: 0,
+            textAlign: "center",
+            padding: "0 14px 10px",
+            fontSize: 10,
+            color: "rgba(17,17,17,0.28)",
+            fontFamily: "'Roboto', sans-serif",
+            flexShrink: 0,
           }}>
-            AI responses may vary — call{" "}
-            <a href="tel:+12136123000" style={{ color: "rgba(212,168,67,0.45)", textDecoration: "none" }}>
+            AI may make mistakes — call{" "}
+            <a
+              href="tel:+12136123000"
+              style={{ color: "rgba(167,85,47,0.6)", textDecoration: "none" }}
+            >
               213-612-3000
             </a>{" "}
             to confirm.
