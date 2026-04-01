@@ -5,67 +5,71 @@ const features = [
   {
     icon: Sunrise,
     title: 'All-Day Breakfast',
-    desc: 'From 7AM to close. Eggs, waffles, and everything in between — always on the menu, no cutoff time.',
-    color: 'text-brand-amber',
-    bg: 'bg-brand-amber/10 border-brand-amber/20',
-    iconBg: 'bg-brand-amber/10',
+    desc: 'From 8AM to close — eggs, waffles, chicken & waffles, burritos, bagels. Always on the menu, no cutoff.',
+    iconColor: '#a7552f',
+    iconBg: 'rgba(167,85,47,0.1)',
+    border: 'rgba(167,85,47,0.18)',
   },
   {
     icon: Leaf,
     title: 'Vegan Friendly',
-    desc: "A dedicated plant-based menu with bold, satisfying options. Never an afterthought — always delicious.",
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10 border-emerald-500/20',
-    iconBg: 'bg-emerald-500/10',
+    desc: 'A dedicated plant-based menu with bold, satisfying options — clearly marked, never an afterthought.',
+    iconColor: '#16a34a',
+    iconBg: 'rgba(22,163,74,0.1)',
+    border: 'rgba(22,163,74,0.18)',
   },
   {
     icon: Moon,
-    title: 'Late Night Open',
-    desc: "Kitchen runs till 1:30AM. Full menu until 2AM. Because cravings don't have a curfew.",
-    color: 'text-brand-gold',
-    bg: 'bg-brand-gold/10 border-brand-gold/20',
-    iconBg: 'bg-brand-gold/10',
+    title: 'Open Till 2 AM',
+    desc: 'Full menu until 2AM Fri–Sat, midnight on weekdays. DTLA\'s go-to for late-night comfort food.',
+    iconColor: '#525252',
+    iconBg: 'rgba(82,82,82,0.1)',
+    border: 'rgba(82,82,82,0.18)',
   },
   {
     icon: Zap,
     title: 'Made to Order',
-    desc: 'Every plate crafted fresh when you order. No shortcuts, no heat lamps — just real quality food.',
-    color: 'text-brand-red',
-    bg: 'bg-brand-red/10 border-brand-red/20',
-    iconBg: 'bg-brand-red/10',
+    desc: 'Everything scratch-made when you order. Generous portions, real ingredients, no frozen shortcuts.',
+    iconColor: '#000000',
+    iconBg: 'rgba(0,0,0,0.08)',
+    border: 'rgba(0,0,0,0.14)',
   },
 ]
 
 export function FeaturesSection() {
   return (
-    <section className="section-padding relative overflow-x-clip border-y border-brand-gold/10 bg-brand-brown/18">
-      <div className="pointer-events-none absolute left-[-8rem] top-12 h-64 w-64 rounded-full bg-brand-gold/8 blur-3xl" />
+    <section className="section-padding relative overflow-x-clip border-y border-black/8"
+             style={{ background: 'rgba(255,255,255,0.3)' }}>
       <div className="container-max relative">
-        <AnimatedSection className="mb-14 text-center">
-          <p className="font-body text-brand-gold uppercase tracking-[0.25em] text-sm font-semibold mb-3">
+        <AnimatedSection className="mb-12 text-center">
+          <p className="mb-3 font-body text-sm font-semibold uppercase tracking-[0.25em] text-brand-amber">
             Why Choose Us
           </p>
-          <h2 className="font-display text-4xl sm:text-5xl font-black text-brand-cream">
+          <h2 className="font-display text-4xl font-black text-brand-cream sm:text-5xl">
             What Makes Us{' '}
             <span className="text-gradient italic">Different</span>
           </h2>
         </AnimatedSection>
 
-        <StaggerContainer className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-          {features.map((feature) => (
-            <StaggerItem key={feature.title}>
+        <StaggerContainer className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          {features.map(f => (
+            <StaggerItem key={f.title}>
               <div
-                className={`panel group h-full rounded-[28px] p-7 transition-all duration-500 hover:scale-[1.02] cursor-default ${feature.bg}`}
+                className="panel-strong group h-full cursor-default rounded-[28px] p-7 transition-all duration-300 hover:-translate-y-1"
+                style={{ borderColor: f.border }}
               >
                 <div
-                  className={`w-12 h-12 rounded-xl ${feature.iconBg} flex items-center justify-center mb-5 group-hover:scale-110 group-hover:-rotate-3 transition-transform duration-300`}
+                  className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3"
+                  style={{ background: f.iconBg }}
                 >
-                  <feature.icon size={22} className={feature.color} />
+                  <f.icon size={22} style={{ color: f.iconColor }} />
                 </div>
-                <h3 className="font-display text-xl font-bold text-brand-cream mb-3 group-hover:text-brand-gold transition-colors duration-300">
-                  {feature.title}
+                <h3 className="mb-3 font-display text-xl font-bold text-brand-cream transition-colors duration-300 group-hover:text-brand-amber">
+                  {f.title}
                 </h3>
-                <p className="font-body text-sm text-brand-cream/50 leading-relaxed">{feature.desc}</p>
+                <p className="font-body text-sm leading-relaxed text-brand-cream/55">
+                  {f.desc}
+                </p>
               </div>
             </StaggerItem>
           ))}
